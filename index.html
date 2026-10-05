@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芗见山海 - 漳州古城沉浸式山海探索官方网站</title>
+    <meta name="description" content="欢迎来到芗见山海，跟随吉祥物芗芗体验漳州古城沉浸式剧本游《侨客寻谱记》、四季非遗研学、打卡寻宝与实景地图导览。">
+    <meta name="keywords" content="芗见山海, 芗芗, 漳州古城, 侨客寻谱记, 沉浸式剧本游, 闽南非遗, 漳州古城地图">
+    
+    <!-- OpenStreetMap 地图样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        :root {
+            --minnan-red: #9e2a2b;
+            --minnan-gold: #e9c46a;
+            --bg-dark: #0d1b2a;
+            --card-bg: rgba(255, 255, 255, 0.04);
+            --text-light: #e0e1dd;
+            --accent-blue: #3a86ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            scroll-behavior: smooth;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+            line-height: 1.6;
+            padding-bottom: 30px;
+        }
+
+        /* 顶部闽南特色花纹装饰条 */
+        .minnan-banner {
+            height: 4px;
+            background: linear-gradient(90deg, var(--minnan-red), var(--minnan-gold), var(--minnan-red));
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1001;
+        }
+
+        /* 导航栏 */
+        header {
+            position: fixed;
+            top: 4px;
+            width: 100%;
+            background: rgba(13, 27, 42, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 5%;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(233, 196, 106, 0.2);
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--minnan-gold);
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-tag {
+            font-size: 11px;
+            background: var(--minnan-red);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        nav {
+            display: flex;
+            gap: 15px;
+        }
+
+        nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--minnan-gold);
+        }
+
+        /* Hero 视效区 */
+        .hero {
+            padding-top: 100px;
+            padding-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(13,27,42,0.7) 0%, var(--bg-dark) 100%), 
+                        url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80') center/cover;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .hero h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(233, 196, 106, 0.5);
+        }
+
+        .hero p {
+            font-size: 15px;
+            color: #c0c7d0;
+            margin-bottom: 25px;
+            max-width: 600px;
+        }
+
+        /* 📱 手机端专用：首页快捷跳转九宫格导航 */
+        .quick-nav {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 500px;
+            margin-top: 10px;
+            padding: 0 10px;
+        }
+
+        .quick-nav-btn {
+            background: linear-gradient(135deg, rgba(158, 42, 43, 0.4) 0%, rgba(13, 27, 42, 0.8) 100%);
+            border: 1px solid var(--minnan-gold);
+            color: #fff;
+            padding: 14px 10px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+        }
+
+        .quick-nav-btn:active {
+            transform: scale(0.97);
+            background: var(--minnan-red);
+        }
+
+        /* 通用 Section 布局 */
+        section {
+            padding: 50px 5%;
+            scroll-margin-top: 60px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 26px;
+            margin-bottom: 8px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .section-title::before, .section-title::after {
+            content: "🌸";
+            font-size: 16px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--minnan-gold);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* 吉祥物“芗芗”专区 */
+        .mascot-container {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 25px;
+            border: 1px solid rgba(233, 196, 106, 0.2);
+            flex-wrap: wrap;
+        }
+
+        .mascot-img-box {
+            flex: 1;
+            min-width: 250px;
+            text-align: center;
+        }
+
+        .mascot-img-box img {
+            max-width: 100%;
+            max-height: 320px;
+            border-radius: 14px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            object-fit: cover;
+        }
+
+        .mascot-info {
+            flex: 1.5;
+            min-width: 260px;
+        }
+
+        .mascot-info h3 {
+            font-size: 24px;
+            color: var(--minnan-gold);
+            margin-bottom: 12px;
+        }
+
+        .mascot-info p {
+            color: #c0c7d0;
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .tag {
+            display: inline-block;
+            background: rgba(158, 42, 43, 0.3);
+            color: var(--minnan-gold);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-right: 6px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(233, 196, 106, 0.3);
+        }
+
+        /* 王牌剧本游《侨客寻谱记》 */
+        .script-hero {
+            background: linear-gradient(135deg, rgba(158, 42, 43, 0.25) 0%, rgba(13, 27, 42, 0.9) 100%);
+            border: 1px solid var(--minnan-gold);
+            border-radius: 18px;
+            padding: 25px;
+            margin-bottom: 40px;
+        }
+
+        .script-badge {
+            display: inline-block;
+            background: var(--minnan-red);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .script-title {
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .script-desc {
+            color: #c0c7d0;
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+
+        .script-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #e0e1dd;
+        }
+
+        /* 🗺️ 漳州古城实景地图模块 */
+        #map-container {
+            width: 100%;
+            height: 380px;
+            border-radius: 16px;
+            border: 2px solid var(--minnan-gold);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+
+        .map-spots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .spot-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .spot-card strong {
+            color: var(--minnan-gold);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* 四季活动卡片网格 */
+        .season-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .season-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 20px;
+        }
+
+        .season-card h4 {
+            font-size: 18px;
+            color: var(--minnan-gold);
+            margin-bottom: 8px;
+        }
+
+        .season-card p {
+            color: #b0b8c0;
+            font-size: 13px;
+        }
+
+        /* 其他配套活动网格 */
+        .activities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+        }
+
+        .act-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--minnan-red);
+            padding: 15px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .act-item h5 {
+            font-size: 15px;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .act-item p {
+            font-size: 13px;
+            color: #a0aab2;
+        }
+
+        /* 票务套餐卡片 */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .price-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: center;
+            position: relative;
+        }
+
+        .price-card.featured {
+            border-color: var(--minnan-gold);
+            background: rgba(158, 42, 43, 0.15);
+        }
+
+        .featured-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--minnan-gold);
+            color: #000;
+            padding: 3px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .price-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .price-value {
+            font-size: 30px;
+            font-weight: bold;
+            color: var(--minnan-gold);
+            margin-bottom: 15px;
+        }
+
+        .price-value span {
+            font-size: 12px;
+            color: #8d99ae;
+        }
+
+        .price-features {
+            list-style: none;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .price-features li {
+            margin-bottom: 8px;
+            color: #c0c7d0;
+            font-size: 13px;
+        }
+
+        .btn-buy {
+            display: block;
+            background: linear-gradient(45deg, var(--minnan-red), #c1121f);
+            color: #fff;
+            padding: 12px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(158, 42, 43, 0.4);
+        }
+
+        /* 🔝 悬浮返回顶部按钮 */
+        .back-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--minnan-gold);
+            color: #000;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        /* 页脚 */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            background: #08121e;
+            border-top: 1px solid rgba(224, 225, 221, 0.05);
+            color: #6c757d;
+            font-size: 12px;
+            margin-top: 40px;
+        }
+
+        /* 针对小屏手机的优化 */
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 28px; }
+            .script-features { grid-template-columns: 1fr; }
+            nav { display: none; } /* 手机端隐藏顶部文本导航，只留九宫格 */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="minnan-banner"></div>
+
+    <!-- 导航栏 -->
+    <header>
+        <div class="logo">
+            芗见山海 <span class="logo-tag">漳州古城</span>
+        </div>
+        <nav>
+            <a href="#mascot">IP吉祥物</a>
+            <a href="#script">剧本与活动</a>
+            <a href="#map-section">古城地图</a>
+            <a href="#tickets">景区票务</a>
+        </nav>
+    </header>
+
+    <!-- Hero 区 -->
+    <div class="hero">
+        <h1>芗见山海 · 沉浸古城</h1>
+        <p>跟随吉祥物“芗芗”，解锁漳州古城实景剧情任务与四季非遗寻福体验</p>
+
+        <!-- 📱 手机端专用：首页直达九宫格按钮 -->
+        <div class="quick-nav">
+            <a href="#script" class="quick-nav-btn">📜 核心剧本游</a>
+            <a href="#map-section" class="quick-nav-btn">🗺️ 古城实景地图</a>
+            <a href="#seasons" class="quick-nav-btn">🌸 四季常态活动</a>
+            <a href="#tickets" class="quick-nav-btn">🎟️ 预订特惠门票</a>
+        </div>
+    </div>
+
+    <!-- 吉祥物“芗芗”展示区 -->
+    <section id="mascot">
+        <h2 class="section-title">官方 IP 吉祥物 — 芗芗</h2>
+        <p class="section-subtitle">探索漳州古城的灵动引路人</p>
+
+        <div class="mascot-container">
+            <div class="mascot-img-box">
+                <img src="xiangxiang.jpg" alt="芗见山海吉祥物 - 芗芗">
+            </div>
+            <div class="mascot-info">
+                <h3>嗨！我是“芗芗”</h3>
+                <p>
+                    我融合了漳州古城深厚的闽南文化与自然灵韵，头顶水仙花与闽南古厝燕尾脊造型，身着国潮服饰。作为“芗见山海”的官方代言人，我将带你穿梭古城街巷，揭开《侨客寻谱记》的神秘面纱，亲手制作漳州非遗！
+                </p>
+                <div>
+                    <span class="tag">闽南燕尾脊</span>
+                    <span class="tag">漳州水仙花</span>
+                    <span class="tag">国潮实景导游</span>
+                    <span class="tag">寻根打卡大使</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 剧本游板块 -->
+    <section id="script">
+        <h2 class="section-title">王牌实景剧本游</h2>
+        <p class="section-subtitle">穿梭古城街巷 · 破解侨批谜局</p>
+
+        <div class="script-hero">
+            <span class="script-badge">核心爆款体验产品</span>
+            <h3 class="script-title">《侨客寻谱记》（芗城侨客寻谱记）</h3>
+            <p class="script-desc">
+                古城实景沉浸式剧本游，以闽南侨批、寻根溯源作为故事主线。游客将在漳州古城真实街巷中实景闯关，与 NPC 交互解密，属于项目核心体验产品。
+            </p>
+            <div class="script-features">
+                <div class="feature-item">👘 可搭配汉服精致妆造</div>
+                <div class="feature-item">🎟️ 附赠古城夜市消费券</div>
+                <div class="feature-item">🎓 设有专属学生特惠套餐</div>
+                <div class="feature-item">📱 美团 / 大众点评同步上架</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 🗺️ 漳州古城地图模块 -->
+    <section id="map-section" style="background: rgba(0,0,0,0.2);">
+        <h2 class="section-title">漳州古城实景地图</h2>
+        <p class="section-subtitle">跟随地图指引 · 寻找寻谱线索与打卡点</p>
+
+        <div id="map-container"></div>
+
+        <div class="map-spots">
+            <div class="spot-card">
+                <strong>📍 香港路古牌坊群</strong>
+                <span>核心解密关卡与NPC聚集地</span>
+            </div>
+            <div class="spot-card">
+                <strong>📍 台湾路骑楼街</strong>
+                <span>夜市消费券与汉服打卡点</span>
+            </div>
+            <div class="spot-card">
+                <strong>📍 漳州文庙</strong>
+                <span>《芗城学堂》国学体验区</span>
+            </div>
+            <div class="spot-card">
+                <strong>📍 修文路侨批馆</strong>
+                <span>《侨客寻谱记》故事起点</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 四季活动板块 -->
+    <section id="seasons">
+        <h2 class="section-title">四季常态化活动</h2>
+        <p class="section-subtitle">一季一主题 · 全年游园寻福</p>
+
+        <div class="season-grid">
+            <div class="season-card">
+                <h4>🌱 春｜芗城学堂</h4>
+                <p>融入儒家文化与闽南传统文化，集传统礼仪学习与古城认知于一体的文化体验。</p>
+            </div>
+            <div class="season-card">
+                <h4>🌊 夏｜一方印 · 一封信</h4>
+                <p>以“一封家书/侨批”为情感载体，将八宝印泥与传统书信书写融入古城体验。</p>
+            </div>
+            <div class="season-card">
+                <h4>🍁 秋｜小小非遗师</h4>
+                <p>轮换开设木版年画、八宝印泥等漳州特色非遗体验，亲手制作专属非遗手作。</p>
+            </div>
+            <div class="season-card">
+                <h4>❄️ 冬｜古城四季·游园寻福</h4>
+                <p>依托古城文化与闽南民俗打造，形成全年可持续的古城游园活动体系。</p>
+            </div>
+        </div>
+
+        <h3 style="color: #fff; margin-bottom: 15px; font-size: 18px;">🎯 配套特惠活动</h3>
+        <div class="activities-grid">
+            <div class="act-item">
+                <h5>1. 侨乡寻根主题研学线路</h5>
+                <p>OTA 平台同步上架，亲子与团队深度游览路线。</p>
+            </div>
+            <div class="act-item">
+                <h5>2. 古城打卡寻宝 (9.9元)</h5>
+                <p>购买实体打卡手册（9.9元），沿线集章兑换精美礼品。</p>
+            </div>
+            <div class="act-item">
+                <h5>3. 工作日半价体验</h5>
+                <p>工作日期间参与剧本游与非遗体验享限时 5 折！</p>
+            </div>
+            <div class="act-item">
+                <h5>4. 季度游玩卡专享</h5>
+                <p>持卡可优先免费参与当季线下古城寻福活动。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 票务预订专区 -->
+    <section id="tickets" style="background: rgba(0,0,0,0.2);">
+        <h2 class="section-title">特惠门票与套餐预订</h2>
+        <p class="section-subtitle">美团 / 大众点评热销中</p>
+
+        <div class="pricing-grid">
+            <div class="price-card">
+                <div class="price-title">打卡手册寻宝套餐</div>
+                <div class="price-value">￥9.9 <span>/ 本</span></div>
+                <ul class="price-features">
+                    <li>✓ 精美打卡手册 1 本</li>
+                    <li>✓ 古城寻宝路线地图</li>
+                    <li>✓ 专属景点集章体验</li>
+                    <li>✓ 集章兑换纪念品</li>
+                </ul>
+                <a href="#contact" class="btn-buy">立即购买</a>
+            </div>
+
+            <div class="price-card featured">
+                <div class="featured-badge">热门爆款</div>
+                <div class="price-title">《侨客寻谱记》基础票</div>
+                <div class="price-value">￥68 <span>/ 人起</span></div>
+                <ul class="price-features">
+                    <li>✓ 《侨客寻谱记》实景通票</li>
+                    <li>✓ 任务解密道具包 1 份</li>
+                    <li>✓ 学生凭证享专属折扣</li>
+                    <li>✓ 工作日享 5 折优惠</li>
+                </ul>
+                <a href="#contact" class="btn-buy">立即预订</a>
+            </div>
+
+            <div class="price-card">
+                <div class="price-title">沉浸式汉服全套餐</div>
+                <div class="price-value">￥128 <span>/ 人</span></div>
+                <ul class="price-features">
+                    <li>✓ 含《侨客寻谱记》体验</li>
+                    <li>✓ 精美汉服妆造体验 1 次</li>
+                    <li>✓ 古城夜市通用消费券</li>
+                    <li>✓ 漳州非遗手作体验 1 次</li>
+                </ul>
+                <a href="#contact" class="btn-buy">立即预订</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 🔝 悬浮返回顶部按钮 -->
+    <a href="#" class="back-top" title="返回顶部">↑</a>
+
+    <!-- 页脚 -->
+    <footer id="contact">
+        <p>© 2026 芗见山海 景区官方网站 | 漳州古城沉浸式文创体验</p>
+        <p style="margin-top: 8px; color: #495057;">平台合作：美团 / 大众点评 / 携程 OTA</p>
+    </footer>
+
+    <!-- Leaflet 地图 JS 库 -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 初始化漳州古城地图 (坐标: 24.5105, 117.6528)
+        const map = L.map('map-container').setView([24.5105, 117.6528], 16);
+
+        // 加载地图图层
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // 添加漳州古城核心打卡地标 Marker
+        const spots = [
+            { name: "📍 修文路侨批馆（起点）", lat: 24.5110, lng: 117.6520 },
+            { name: "📍 香港路古牌坊群", lat: 24.5102, lng: 117.6530 },
+            { name: "📍 台湾路骑楼街", lat: 24.5118, lng: 117.6535 },
+            { name: "📍 漳州文庙", lat: 24.5090, lng: 117.6515 }
+        ];
+
+        spots.forEach(spot => {
+            L.marker([spot.lat, spot.lng]).addTo(map)
+                .bindPopup(`<b>${spot.name}</b><br>《侨客寻谱记》关键打卡点`);
+        });
+    </script>
+</body>
+</html>
